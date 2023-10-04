@@ -174,9 +174,13 @@ impl Session {
 impl Actor for Session {
     type Context = WebsocketContext<Self>;
     fn stopped(&mut self, _ctx: &mut Self::Context) {
+    }
+    fn stopping(&mut self, ctx: &mut Self::Context) -> actix::Running {
         if let Some(username) = self.username.clone() {
+            log::info!("logging out");
             self.server.do_send(Logout { username });
         }
+        actix::Running::Stop
     }
 }
 
