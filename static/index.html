@@ -1,12 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="./res/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <style>
+
+    html, body {
+      width: 100vw;
+      height: 100dvh;
+    }
+    body {
+        font-family: "Ubuntu";
+        font-size: 140%;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+    }
+
+    header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 10px 30px;
+        border-bottom: 1px solid gray;
+        margin-bottom: 0;
+    }
+
+    header .branding {
+        flex-grow: 1;
+        font-weight: bold;
+    }
+
+    .row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        column-gap: 10px;
+    }
+
+    .col {
+        display: flex;
+        flex-direction: column;
+        row-gap: 10px;
+        align-items: start;
+    }
+
+    .expand {
+      flex-grow: 1;
+    }
+
+    .shrink {
+      flex-shrink: 1;
+    }
+
+    .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 20px;
+    }
+
+    .active {
+        background-color: darkgreen;
+    }
+
+    .inactive {
+        background-color: darkred;
+    }
+
+    div.content {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 300%;
+      margin: 0;
+    }
+
+    input, button {
+      font-family: "Ubuntu";
+      font-size: 120%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 2px solid black;
+      background-color: white;
+    }
+
+    input[type="button"], button {
+      padding: 10px 30px;
+    }
+
+    input:hover, button:hover {
+      filter: brightness(90%);
+    }
+
+    input:active, button:active {
+      filter: brightness(80%);
+    }
+
+    .thin {
+      font-weight: 200;
+    }
+
+    h4 {
+      margin: 0 0 20px;
+    }
+
+    .content {
+      /*display: flex;
+      flex-direction: column;
+      align-items: center;*/
+      margin-top: 50px;
+    }
+
+    .page {
+      width: fit-content;
+      padding: 50px;
+      background: #fefefe;
+      border: 1px solid black;
+      border-radius: 5px;
+      justify-self: center;
+      margin: 100px 0;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+
+    @media screen and (max-width: 720px) {
+      body {
+        font-size: 100%;
+      }
+      h1 {
+        font-size: 250%;
+      }
+      input, button {
+        font-size: 100%;
+      }
+      .page {
+        padding: 30px;
+        align-self: center;
+        justify-self: center;
+      }
+    }
+
+    .inter {
+      font-family: "Inter";
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    #bottom-bar {
+      position: relative;
+      bottom: 0;
+      border-top: 1px solid black;
+      padding: 10px 30px;
+      align-self: stretch;
+      font-size: 70%;
+    }
+
+    #chat {
+      position: relative;
+      width: 100%;
+      overflow: auto;
+    }
+
+    .inner {
+      padding: 0 30px;
+      overflow-y: scroll;
+    }
+
+    .stretch-align {
+      align-self: stretch;
+    }
+
+    .back {
+      color: black !important;
+      text-decoration: none;
+      background: #efefef;
+      padding: 10px;
+      border-radius: 25px;
+      margin: 30px 30px 0;
+    }
+
+    .chat {
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      row-gap: 10px;
+      font-size: 80%;
+      max-width: 80%;
+    }
+
+    .lime {
+      background: #b9dd93;
+      color: darkgreen;
+    }
+
+    .orange {
+      background: #f6bea1;
+      color: #734b01;
+    }
+
+    .gray {
+      background: lightgray;
+    }
+
+    .username {
+      font-weight: bold;
+    }
+
+    .outgoing {
+      align-self: end;
+    }
+  </style>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Super Duper Chat</title>
 </head>
 <body>
-  <p>Hello World</p>
+  <header>
+    <span class="branding">Super Duper Chat</span>
+    <div class="row">
+      <div class="circle inactive"></div>
+      <div id="connection-status">Disconnected</div>
+    </div>
+  </header>
+  <div class="content hidden">
+    <div id="welcome">
+      <h1 class="thin">Welcome to</h1>
+      <h1>Super Duper Chat!</h1>
+    </div>
+    <div id="login-page" class="page hidden">
+      <h4>Please log in to continue</h4>
+      <div class="col">
+        <input type="text" name="username" id="username-input" placeholder="username">
+        <input type="button" value="Log In">
+      </div>
+    </div>
+    <div id="join-room-page" class="page hidden">
+      <h4>Join a room</h4>
+      <div class="col">
+        <input type="text" name="room_code" id="room-code-input" placeholder="room code">
+        <button><span class="inter bold">-> </span>Join</button>
+      </div>
+      <p>or</p>
+        <button><span class="inter bold">+ </span>Create Room</button>
+    </div>
+  </div>
+  <div id="chat" class="col expand">
+    <a href="javascript:void(0);" class="back bold"><span class="inter bold"><-</span> Leave Room <span id="code">(ASBHSI)</span></a>
+    <div class="inner col expand stretch-align">
+      <h2>Nothing here...</h2>
+      <div class="chat lime incoming">
+        <div class="username">somerandomguy</div>
+        <div class="message">Hey check out this new thing I found in the woods.</div>
+      </div>
+      <div class="chat lime incoming">
+        <div class="username">somerandomguy</div>
+        <div class="message">Not entirely sure what its meant to be but it kinda looks like a spaceship and its super cool so...</div>
+      </div>
+      <div class="chat orange incoming">
+        <div class="username">jerryisfun</div>
+        <div class="message">Damn! that really does look kinda sick. Can I buy it from you?</div>
+      </div>
+      <div class="chat lime incoming">
+        <div class="username">somerandomguy</div>
+        <div class="message">How much you willing to pay?</div>
+      </div>
+      <div class="chat orange incoming">
+        <div class="username">jerryisfun</div>
+        <div class="message">Name your price :)</div>
+      </div>
+      <div class="chat gray outgoing">
+        <div class="username">myusername</div>
+        <div class="message">Okay guys, what the HECK are you two talking about?</div>
+      </div>
+      <div class="chat orange incoming">
+        <div class="username">jerryisfun</div>
+        <div class="message">The thing...</div>
+      </div>
+      <div class="chat orange incoming">
+        <div class="username">jerryisfun</div>
+        <div class="message">This thing > ()--()--|</div>
+      </div>
+      <div class="chat lime incoming">
+        <div class="username">somerandomguy</div>
+        <div class="message">Yeah dude! this really neat thing i found in the woods.</div>
+      </div>
+      <div class="chat lime incoming">
+        <div class="username">somerandomguy</div>
+        <div class="message">I basically just went for a hike and then I saw this really cool thing on the forest floor covered in fallen leaves and stuff and when I picked it up I swear i saw it glow or something for a second. its super cool!</div>
+      </div>
+    </div>
+    <div id="bottom-bar" class="row">
+      <input type="text" class="expand" name="chat-input-box" placeholder="type your message here...">
+      <button>Send <span class="inter bold">-></span></button>
+    </div>
+  </div>
 </body>
 </html>
