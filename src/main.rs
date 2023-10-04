@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     let server = Server::default().start();
     HttpServer::new(move || {
         App::new()
-            .app_data(server.clone())
+            .app_data(Data::new(server.clone()))
             .service(index)
             .service(chat)
             .service(actix_files::Files::new("/res", "./static/res"))

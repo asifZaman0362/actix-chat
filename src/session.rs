@@ -16,7 +16,12 @@ pub enum IncomingMessage {
     Logout,
     JoinRoom(String),
     CreateRoom,
+    LeaveRoom,
 }
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct UpdateRoom(pub Option<Addr<Room>>);
 
 #[derive(Message, Serialize, Clone)]
 #[rtype(result = "()")]
@@ -48,12 +53,14 @@ impl Session {
         let session = ctx.address().clone();
         match msg {
             IncomingMessage::Login(username) => {
+                let username_copy = username.clone();
                 self.server
                     .send(Login { username, session })
                     .into_actor(self)
-                    .then(|res, _act, inner_ctx| {
+                    .then(|res, act, inner_ctx| {
                         match res {
                             Ok(Ok(())) => {
+                                act.username = Some(username_copy);
                                 inner_ctx.text(to_string(&OutgoingMessage::LoginSuccess).unwrap())
                             }
                             Ok(Err(())) => inner_ctx.text(
@@ -83,6 +90,7 @@ impl Session {
                         });
                     }
                     self.server.do_send(Logout { username });
+                    self.username = None;
                 }
             }
             IncomingMessage::CreateRoom => {
@@ -151,12 +159,25 @@ impl Session {
                     );
                 }
             }
+            IncomingMessage::LeaveRoom => {
+                if let Some(room) = self.room.clone() {
+                    if let Some(username) = self.username.clone() {
+                        room.do_send(RemoveUser { username, session });
+                        self.room = None;
+                    }
+                }
+            }
         }
     }
 }
 
 impl Actor for Session {
     type Context = WebsocketContext<Self>;
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        if let Some(username) = self.username.clone() {
+            self.server.do_send(Logout { username });
+        }
+    }
 }
 
 impl StreamHandler<Result<ws::Message, ProtocolError>> for Session {
@@ -181,5 +202,15 @@ impl Handler<OutgoingMessage> for Session {
     type Result = ();
     fn handle(&mut self, msg: OutgoingMessage, ctx: &mut Self::Context) -> Self::Result {
         ctx.text(to_string(&msg).unwrap());
+    }
+}
+
+impl Handler<UpdateRoom> for Session {
+    type Result = ();
+    fn handle(&mut self, msg: UpdateRoom, ctx: &mut Self::Context) -> Self::Result {
+        self.room = msg.0.clone();
+        if msg.0.is_none() {
+            ctx.text(to_string(&OutgoingMessage::RemoveFromRoom).unwrap());
+        }
     }
 }

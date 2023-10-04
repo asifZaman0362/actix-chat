@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::room::{AddUser, BroadcastMessage, Room};
-use crate::session::OutgoingMessage;
+use crate::session::{OutgoingMessage, UpdateRoom};
 use crate::User;
 
 use actix::{Actor, Addr, AsyncContext, Context, Handler, Message};
@@ -118,9 +118,10 @@ impl Handler<JoinRoom> for Server {
     fn handle(&mut self, msg: JoinRoom, _ctx: &mut Self::Context) -> Self::Result {
         if let Some(room) = self.rooms.get(&msg.code) {
             room.do_send(AddUser {
-                session: msg.session,
+                session: msg.session.clone(),
                 username: msg.username,
             });
+            msg.session.do_send(UpdateRoom(Some(room.to_owned())));
             Ok(())
         } else {
             Err(SuperDuperError::RoomNotFound)
@@ -136,6 +137,7 @@ impl Handler<CreateRoom> for Server {
             username: msg.username,
             room: code,
         }));
+        msg.session.do_send(UpdateRoom(Some(room)));
     }
 }
 

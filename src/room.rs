@@ -2,7 +2,7 @@ use actix::{Actor, Addr, AsyncContext, Context, Handler, Message};
 
 use crate::{
     server::{DestroyRoom, Server},
-    session::OutgoingMessage,
+    session::{OutgoingMessage, UpdateRoom},
     User,
 };
 
@@ -42,6 +42,11 @@ impl Room {
 
 impl Actor for Room {
     type Context = Context<Self>;
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        for user in &self.users {
+            user.do_send(UpdateRoom(None));
+        }
+    }
 }
 
 impl Handler<AddUser> for Room {
@@ -59,8 +64,10 @@ impl Handler<AddUser> for Room {
 impl Handler<RemoveUser> for Room {
     type Result = ();
     fn handle(&mut self, msg: RemoveUser, ctx: &mut Self::Context) -> Self::Result {
+        log::info!("leaving room?");
         if let Some(idx) = self.users.iter().position(|x| *x == msg.session) {
             self.users.remove(idx);
+            msg.session.do_send(UpdateRoom(None));
             ctx.address()
                 .do_send(BroadcastMessage(OutgoingMessage::UserLeft(msg.username)));
         }

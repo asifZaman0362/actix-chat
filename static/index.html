@@ -4,12 +4,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
   <style>
 
     html, body {
       width: 100vw;
       height: 100dvh;
     }
+
     body {
         font-family: "Ubuntu";
         font-size: 140%;
@@ -81,7 +83,7 @@
       margin: 0;
     }
 
-    input, button {
+    input, button, textarea {
       font-family: "Ubuntu";
       font-size: 120%;
       padding: 10px;
@@ -94,11 +96,11 @@
       padding: 10px 30px;
     }
 
-    input:hover, button:hover {
+    input:hover, button:hover, textarea:hover {
       filter: brightness(90%);
     }
 
-    input:active, button:active {
+    input:active, button:active, textarea:active {
       filter: brightness(80%);
     }
 
@@ -138,7 +140,7 @@
       h1 {
         font-size: 250%;
       }
-      input, button {
+      input, button, textarea {
         font-size: 100%;
       }
       .page {
@@ -194,7 +196,6 @@
       border-radius: 10px;
       display: flex;
       flex-direction: column;
-      row-gap: 10px;
       font-size: 80%;
       max-width: 80%;
     }
@@ -215,10 +216,25 @@
 
     .username {
       font-weight: bold;
+      margin: 0;
+    }
+
+    .message {
+      margin: 0;
+      font-family: "Ubuntu";
     }
 
     .outgoing {
       align-self: end;
+      text-align: right;
+    }
+
+    .join-leave-notification {
+      border-radius: 25px;
+      background-color: #ededed;
+      align-self: center;
+      padding: 10px 20px;
+      font-size: 70%;
     }
   </style>
   <meta charset="UTF-8">
@@ -229,7 +245,7 @@
   <header>
     <span class="branding">Super Duper Chat</span>
     <div class="row">
-      <div class="circle inactive"></div>
+      <div id="connection-indicator" class="circle inactive"></div>
       <div id="connection-status">Disconnected</div>
     </div>
   </header>
@@ -241,69 +257,29 @@
     <div id="login-page" class="page hidden">
       <h4>Please log in to continue</h4>
       <div class="col">
-        <input type="text" name="username" id="username-input" placeholder="username">
-        <input type="button" value="Log In">
+        <input type="text" name="username" required id="username-input" placeholder="username" onkeypress="keypress(event, login)">
+        <input type="button" value="Log In" onclick="login()">
       </div>
     </div>
     <div id="join-room-page" class="page hidden">
       <h4>Join a room</h4>
       <div class="col">
-        <input type="text" name="room_code" id="room-code-input" placeholder="room code">
-        <button><span class="inter bold">-> </span>Join</button>
+        <input type="text" name="room_code" required id="room-code-input" placeholder="room code" onkeypress="keypress(event, joinRoom)">
+        <button onclick="joinRoom()"><span class="inter bold">-> </span>Join</button>
       </div>
       <p>or</p>
-        <button><span class="inter bold">+ </span>Create Room</button>
+        <button onclick="createRoom()"><span class="inter bold">+ </span>Create Room</button>
     </div>
   </div>
   <div id="chat" class="col expand">
-    <a href="javascript:void(0);" class="back bold"><span class="inter bold"><-</span> Leave Room <span id="code">(ASBHSI)</span></a>
-    <div class="inner col expand stretch-align">
-      <h2>Nothing here...</h2>
-      <div class="chat lime incoming">
-        <div class="username">somerandomguy</div>
-        <div class="message">Hey check out this new thing I found in the woods.</div>
-      </div>
-      <div class="chat lime incoming">
-        <div class="username">somerandomguy</div>
-        <div class="message">Not entirely sure what its meant to be but it kinda looks like a spaceship and its super cool so...</div>
-      </div>
-      <div class="chat orange incoming">
-        <div class="username">jerryisfun</div>
-        <div class="message">Damn! that really does look kinda sick. Can I buy it from you?</div>
-      </div>
-      <div class="chat lime incoming">
-        <div class="username">somerandomguy</div>
-        <div class="message">How much you willing to pay?</div>
-      </div>
-      <div class="chat orange incoming">
-        <div class="username">jerryisfun</div>
-        <div class="message">Name your price :)</div>
-      </div>
-      <div class="chat gray outgoing">
-        <div class="username">myusername</div>
-        <div class="message">Okay guys, what the HECK are you two talking about?</div>
-      </div>
-      <div class="chat orange incoming">
-        <div class="username">jerryisfun</div>
-        <div class="message">The thing...</div>
-      </div>
-      <div class="chat orange incoming">
-        <div class="username">jerryisfun</div>
-        <div class="message">This thing > ()--()--|</div>
-      </div>
-      <div class="chat lime incoming">
-        <div class="username">somerandomguy</div>
-        <div class="message">Yeah dude! this really neat thing i found in the woods.</div>
-      </div>
-      <div class="chat lime incoming">
-        <div class="username">somerandomguy</div>
-        <div class="message">I basically just went for a hike and then I saw this really cool thing on the forest floor covered in fallen leaves and stuff and when I picked it up I swear i saw it glow or something for a second. its super cool!</div>
-      </div>
+    <a href="javascript:void(0);" class="back bold" onclick="leaveRoom()"><span class="inter bold"><-</span> Leave Room <span id="code">(ASBHSI)</span></a>
+    <div id="chat-list" class="inner col expand stretch-align">
     </div>
     <div id="bottom-bar" class="row">
-      <input type="text" class="expand" name="chat-input-box" placeholder="type your message here...">
-      <button>Send <span class="inter bold">-></span></button>
+      <textarea type="text" class="expand" id="chat-input-box" multiline placeholder="type your message here..." onkeypress="keypress(event, sendChatMessage)"></textarea>
+      <button onclick="sendChatMessage()">Send <span class="inter bold">-></span></button>
     </div>
   </div>
+  <script src="./res/script.js"></script>
 </body>
 </html>
