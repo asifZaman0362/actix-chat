@@ -15,7 +15,10 @@ pub struct AddUser {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct RemoveUser(pub User);
+pub struct RemoveUser {
+    pub session: User,
+    pub username: String,
+}
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -55,9 +58,11 @@ impl Handler<AddUser> for Room {
 
 impl Handler<RemoveUser> for Room {
     type Result = ();
-    fn handle(&mut self, msg: RemoveUser, _ctx: &mut Self::Context) -> Self::Result {
-        if let Some(idx) = self.users.iter().position(|x| *x == msg.0) {
+    fn handle(&mut self, msg: RemoveUser, ctx: &mut Self::Context) -> Self::Result {
+        if let Some(idx) = self.users.iter().position(|x| *x == msg.session) {
             self.users.remove(idx);
+            ctx.address()
+                .do_send(BroadcastMessage(OutgoingMessage::UserLeft(msg.username)));
         }
         if self.users.is_empty() {
             self.server.do_send(DestroyRoom(self.code.clone()));

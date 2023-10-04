@@ -6,8 +6,8 @@ use actix_web_actors::ws::{self, ProtocolError, WebsocketContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
 
-use crate::room::{Room, BroadcastMessage};
-use crate::server::{Login, Server, SuperDuperError, Logout, JoinRoom, CreateRoom};
+use crate::room::{BroadcastMessage, RemoveUser, Room};
+use crate::server::{CreateRoom, JoinRoom, Login, Logout, Server, SuperDuperError};
 
 #[derive(Debug, Deserialize)]
 pub enum IncomingMessage {
@@ -53,14 +53,12 @@ impl Session {
                     .into_actor(self)
                     .then(|res, _act, inner_ctx| {
                         match res {
-                            Ok(Ok(())) => inner_ctx.text(
-                                to_string(&OutgoingMessage::LoginSuccess).unwrap(),
-                            ),
+                            Ok(Ok(())) => {
+                                inner_ctx.text(to_string(&OutgoingMessage::LoginSuccess).unwrap())
+                            }
                             Ok(Err(())) => inner_ctx.text(
-                                to_string(&OutgoingMessage::Error(
-                                    SuperDuperError::UsernameTaken,
-                                ))
-                                .unwrap(),
+                                to_string(&OutgoingMessage::Error(SuperDuperError::UsernameTaken))
+                                    .unwrap(),
                             ),
                             Err(_) => {
                                 log::error!("server mailbox full!");
@@ -78,43 +76,79 @@ impl Session {
             }
             IncomingMessage::Logout => {
                 if let Some(username) = self.username.clone() {
-                    self.server.do_send(Logout{ username });
+                    if let Some(room) = &self.room {
+                        room.do_send(RemoveUser {
+                            session,
+                            username: username.clone(),
+                        });
+                    }
+                    self.server.do_send(Logout { username });
                 }
             }
             IncomingMessage::CreateRoom => {
                 if self.room.is_some() {
-                    ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::AlreadyInRoom)).unwrap());
+                    ctx.text(
+                        to_string(&OutgoingMessage::Error(SuperDuperError::AlreadyInRoom)).unwrap(),
+                    );
                 } else if let Some(username) = self.username.clone() {
-                    self.server.do_send(CreateRoom{ username, session });
+                    self.server.do_send(CreateRoom { username, session });
                 } else {
-                    ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap());
+                    ctx.text(
+                        to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap(),
+                    );
                 }
             }
             IncomingMessage::JoinRoom(code) => {
                 if self.room.is_some() {
-                    ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::AlreadyInRoom)).unwrap());
+                    ctx.text(
+                        to_string(&OutgoingMessage::Error(SuperDuperError::AlreadyInRoom)).unwrap(),
+                    );
                 } else if let Some(username) = self.username.clone() {
-                    self.server.send(JoinRoom{ code, username, session }).into_actor(self).then(|res, _, inner_ctx| {
-                        match res {
-                            Ok(Ok(())) => {},
-                            Ok(Err(err)) => inner_ctx.text(to_string(&OutgoingMessage::Error(err)).unwrap()),
-                            Err(_) => inner_ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::InternalServerError)).unwrap())
-                        }
-                        actix::fut::ready(())
-                    }).wait(ctx);
+                    self.server
+                        .send(JoinRoom {
+                            code,
+                            username,
+                            session,
+                        })
+                        .into_actor(self)
+                        .then(|res, _, inner_ctx| {
+                            match res {
+                                Ok(Ok(())) => {}
+                                Ok(Err(err)) => {
+                                    inner_ctx.text(to_string(&OutgoingMessage::Error(err)).unwrap())
+                                }
+                                Err(_) => inner_ctx.text(
+                                    to_string(&OutgoingMessage::Error(
+                                        SuperDuperError::InternalServerError,
+                                    ))
+                                    .unwrap(),
+                                ),
+                            }
+                            actix::fut::ready(())
+                        })
+                        .wait(ctx);
                 } else {
-                    ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap());
+                    ctx.text(
+                        to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap(),
+                    );
                 }
             }
             IncomingMessage::Message(message) => {
                 if let Some(username) = self.username.clone() {
                     if let Some(room) = self.room.clone() {
-                        room.do_send(BroadcastMessage(OutgoingMessage::Chat { username, message }));
+                        room.do_send(BroadcastMessage(OutgoingMessage::Chat {
+                            username,
+                            message,
+                        }));
                     } else {
-                        ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::NotInRoom)).unwrap());
+                        ctx.text(
+                            to_string(&OutgoingMessage::Error(SuperDuperError::NotInRoom)).unwrap(),
+                        );
                     }
                 } else {
-                    ctx.text(to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap());
+                    ctx.text(
+                        to_string(&OutgoingMessage::Error(SuperDuperError::NotLoggedIn)).unwrap(),
+                    );
                 }
             }
         }
